@@ -41,7 +41,6 @@ jobs:
           python-version: "3.10"
           cache: "pip"
 
-      # --- Added Node.js so we can host the Vite UI for Selenium E2E tests ---
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -58,7 +57,6 @@ jobs:
         run: |
           python engine/rag/vector_store.py
 
-      # --- Install and start Frontend in the background for Selenium ---
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci || npm install
@@ -66,8 +64,8 @@ jobs:
       - name: Start Frontend Dev Server in Background
         working-directory: frontend
         run: |
-          npm run dev -- --port 5173 &
-          sleep 3
+          nohup npm run dev -- --port 5173 --host 0.0.0.0 &
+          sleep 5
 
       - name: Run Spring Boot Unit & Integration Tests
         working-directory: backend-spring
