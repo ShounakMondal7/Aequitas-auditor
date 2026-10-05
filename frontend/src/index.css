@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+/* Accessible Font Scaling System */
+html.font-scale-normal {
+  font-size: 14px;
+}
+html.font-scale-large {
+  font-size: 16px;
+}
+html.font-scale-xlarge {
+  font-size: 18px;
+}
+
+@media (min-width: 1024px) {
+  html.font-scale-normal {
+    font-size: 15px;
+  }
+  html.font-scale-large {
+    font-size: 17.5px;
+  }
+  html.font-scale-xlarge {
+    font-size: 20px;
+  }
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 dark:bg-[#090514] dark:text-slate-100 overflow-x-hidden;
+}
+
+.spotlight-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+}
+
+.dark .spotlight-card {
+  background: rgba(8, 5, 18, 0.42); /* Sheer tinted glass to reveal weaving WebThreads behind cards */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(8, 219, 1, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.dark .spotlight-card:hover {
+  border-color: rgba(8, 219, 1, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(8, 219, 1, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Base content inside the card sits above the glow */
+.spotlight-card > * {
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure spotlight stays subtle */
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x) var(--mouse-y), 
+    rgba(8, 219, 1, 0.14), 
+    transparent 40%
+  );
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+
+/* 4-point diamond star sparkle */
+.sparkle-star {
+  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
+}
+
+@layer utilities {
+  .perspective-\[1200px\] {
+    perspective: 1200px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* Sleek modern scrollbars */
+  .terminal-scroll::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .terminal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .terminal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(45, 212, 191, 0.3);
+    border-radius: 9999px;
+  }
+  .terminal-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(45, 212, 191, 0.6);
+  }
+}

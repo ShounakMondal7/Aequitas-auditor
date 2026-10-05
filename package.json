@@ -1,0 +1,16 @@
+{
+  "name": "autonomous-ai-fairness-and-bias-auditor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agent-driven autonomous AI fairness and bias auditing system with RAG and HITL governance.",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "rag:populate": "python engine/rag/vector_store.py",
+    "smoke:engine": "python engine/agent.py",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  }
+}

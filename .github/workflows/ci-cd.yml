@@ -1,0 +1,91 @@
+name: CI/CD Pipeline - Autonomous AI Fairness Auditor
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  # =====================================================================
+  # Job 1: Backend (Spring Boot 3.x), MySQL & Python Engine Verification
+  # =====================================================================
+  backend-and-engine:
+    name: Backend & AI Engine Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_ci_password
+          MYSQL_DATABASE: fairness_auditor_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "maven"
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install Python AI Engine Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r engine/requirements.txt
+
+      - name: Verify ChromaDB Regulatory Ingestion
+        run: |
+          python engine/rag/vector_store.py
+
+      - name: Run Spring Boot Unit & Integration Tests
+        working-directory: backend-spring
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/fairness_auditor_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root_ci_password
+          AGENT_ENGINE_PYTHON_PATH: python3
+          AGENT_ENGINE_SCRIPT_PATH: ../engine/agent.py
+          AGENT_ENGINE_WORKING_DIR: ../engine
+        run: |
+          mvn test -Dheadless=true
+
+  # =====================================================================
+  # Job 2: React (Vite) UI Compilation & Bundling Verification
+  # =====================================================================
+  frontend-build:
+    name: Frontend Build & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: |
+          npm ci || npm install
+
+      - name: Run TypeScript Typecheck & Vite Build
+        working-directory: frontend
+        run: |
+          npm run build
