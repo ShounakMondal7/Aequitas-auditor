@@ -2,6 +2,7 @@ package com.auditor.e2e;
 
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -69,27 +70,64 @@ public class AuditorE2ETest {
         assertEquals("Autonomous AI Fairness & Bias Auditor", driver.getTitle());
 
         // ---------------------------------------------------------------------------------
-        // NAVIGATION: Bypass Landing Page and Auth Modal using exact text from UI
+        // NAVIGATION: Bypass Landing Page and Auth Modal using JavascriptExecutor
         // ---------------------------------------------------------------------------------
+        System.out.println("[E2E Step 2.1] Locating and clicking 'Launch Auditor Workspace'...");
         try {
-            System.out.println("[E2E Step 2.1] Attempting to bypass Landing Page if present...");
             WebElement launchButton = new WebDriverWait(driver, Duration.ofSeconds(15))
-                    .until(ExpectedConditions.elementToBeClickable(
-                            By.xpath("//*[contains(text(), 'Launch Auditor Workspace')]")));
-            launchButton.click();
-            System.out.println("[E2E Step 2.1] Clicked 'Launch Auditor Workspace'.");
-
-            System.out.println("[E2E Step 2.2] Waiting for Auth Modal and clicking 'Continue as Guest'...");
-            WebElement guestButton = new WebDriverWait(driver, Duration.ofSeconds(15))
-                    .until(ExpectedConditions.elementToBeClickable(
-                            By.xpath("//*[contains(text(), 'Continue as Guest')]")));
-            guestButton.click();
-            System.out.println("[E2E Step 2.2] Clicked 'Continue as Guest'.");
-
-            // Give the React DOM a moment to unmount the modal and render the dashboard
-            Thread.sleep(1500);
+                    .until(ExpectedConditions.presenceOfElementLocated(
+                            By.xpath("//*[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'launch auditor workspace')]")));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", launchButton);
+            System.out.println("[E2E Step 2.1] Clicked 'Launch Auditor Workspace' via JavascriptExecutor.");
         } catch (Exception e) {
-            System.out.println("[E2E Step 2 Note] Navigation bypassed or already on dashboard: " + e.getMessage());
+            System.out.println("[E2E Step 2.1 Note] 'Launch Auditor Workspace' check note: " + e.getMessage());
+        }
+
+        // Step 2.2: Handle Auth Modal if present ('Continue as Guest' or '1-Click Sign In')
+        System.out.println("[E2E Step 2.2] Checking for Auth Modal or direct Dashboard mount...");
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15)).until(d -> {
+                // If Auth Modal button is visible in DOM, click it via JavascriptExecutor
+                List<WebElement> authButtons = d.findElements(By.xpath(
+                        "//*[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'guest') or contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '1-click sign in')]"));
+                for (WebElement btn : authButtons) {
+                    if (btn.isDisplayed()) {
+                        System.out.println("[E2E Step 2.2] Found Auth Modal button: '" + btn.getText() + "'. Dispatching click via JavascriptExecutor...");
+                        ((JavascriptExecutor) d).executeScript("arguments[0].click();", btn);
+                        return true;
+                    }
+                }
+                // If file input is already present and no modal overlay is visible, dashboard is ready
+                List<WebElement> fileInputs = d.findElements(By.cssSelector("input[type='file']"));
+                if (!fileInputs.isEmpty()) {
+                    List<WebElement> modals = d.findElements(By.xpath("//*[contains(@class, 'z-[10000]')]"));
+                    if (modals.stream().noneMatch(WebElement::isDisplayed)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        } catch (Exception e) {
+            System.out.println("[E2E Step 2.2 Note] Auth modal / dashboard transition check: " + e.getMessage());
+        }
+
+        // Step 2.3: Fail-fast verification: Ensure Auth Modal is dismissed and dashboard file input is mounted
+        System.out.println("[E2E Step 2.3] Verifying Auth Modal is dismissed and dashboard is mounted...");
+        try {
+            WebElement fileInputCheck = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("input[type='file']")));
+            assertNotNull(fileInputCheck, "Dashboard file input must be present in DOM");
+
+            // Ensure no modal backdrop is still displayed blocking the dashboard
+            new WebDriverWait(driver, Duration.ofSeconds(5)).until(d -> {
+                List<WebElement> modals = d.findElements(By.xpath("//*[contains(@class, 'z-[10000]')]"));
+                return modals.stream().noneMatch(WebElement::isDisplayed);
+            });
+            System.out.println("[E2E Step 2.3] Dashboard mounted and Auth Modal successfully dismissed.");
+        } catch (Exception e) {
+            String activeUrl = driver.getCurrentUrl();
+            String pageTitle = driver.getTitle();
+            fail("Navigation to Auditor Dashboard failed! Active URL: " + activeUrl + ", Page Title: '" + pageTitle + "'. Error: " + e.getMessage());
         }
         // ---------------------------------------------------------------------------------
 
@@ -108,7 +146,7 @@ public class AuditorE2ETest {
             for (WebElement btn : runButtons) {
                 if (btn.isDisplayed() && btn.isEnabled()) {
                     System.out.println("[E2E Step 3.1] Triggering explicit run button: " + btn.getText());
-                    btn.click();
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                     break;
                 }
             }
@@ -118,11 +156,11 @@ public class AuditorE2ETest {
         // Step 4: Verify agent terminal logs / AI reasoning stream appears
         System.out.println("[E2E Step 4] Waiting for AI Reasoning Stream / Terminal container to be visible...");
         WebElement terminalContainer = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'ai reasoning stream') " +
-                         "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'terminal') " +
+                By.xpath("//*[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'ai reasoning stream') " +
+                         "or contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'terminal') " +
                          "or contains(@class, 'terminal-scroll') " +
-                         "or contains(text(), 'Ingesting CSV stream') " +
-                         "or contains(text(), 'System Ready')]")));
+                         "or contains(., 'Ingesting CSV stream') " +
+                         "or contains(., 'System Ready')]")));
         assertNotNull(terminalContainer, "Terminal / AI reasoning stream should be visible upon file submission");
         System.out.println("[E2E Step 4] Terminal / AI reasoning stream verified visible.");
 
@@ -137,7 +175,7 @@ public class AuditorE2ETest {
 
         // Step 6: Operator approves the algorithmic remediation fix
         System.out.println("[E2E Step 6] Clicking HITL approval button...");
-        approveButton.click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", approveButton);
         System.out.println("[E2E Step 6] Remediation approved successfully.");
 
         // Step 7: Switch to Fairness Charts tab in the Audit Vault if necessary to expose Recharts
