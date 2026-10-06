@@ -41,7 +41,8 @@ public class AuditorE2ETest {
         options.addArguments("--remote-allow-origins=*");
         options.addArguments("--window-size=1920,1080");
 
-        // Selenium 4.10+ automatically manages ChromeDriver binaries via SeleniumManager
+        // Selenium 4.10+ automatically manages ChromeDriver binaries via
+        // SeleniumManager
         this.driver = new ChromeDriver(options);
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(90));
     }
@@ -66,39 +67,43 @@ public class AuditorE2ETest {
         assertEquals("Autonomous AI Fairness & Bias Auditor", driver.getTitle());
 
         // ---------------------------------------------------------------------------------
-        // FIX ADDED HERE: Click the button to bypass the Landing Page / Auth Modal
-        // Note: I included "Guest" and "Get Started" in the XPath. If your actual button 
-        // has different text, update the text inside the contains() function!
+        // NAVIGATION FIX: Bypass Landing Page and Auth Modal using exact text from UI
         // ---------------------------------------------------------------------------------
         try {
-            WebElement enterButton = new WebDriverWait(driver, Duration.ofSeconds(15))
-                    .until(ExpectedConditions.elementToBeClickable(By.xpath("//button[contains(text(), 'Get Started') or contains(text(), 'Guest')]")));
-            enterButton.click();
-            
-            // Adding a tiny sleep just to let the DOM transition to the dashboard
-            Thread.sleep(2000); 
+            // 1. Click "Launch Auditor Workspace" on the main landing page
+            WebElement launchButton = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions
+                            .elementToBeClickable(By.xpath("//*[contains(text(), 'Launch Auditor Workspace')]")));
+            launchButton.click();
+
+            // 2. Wait for the Auth Modal to pop up, then click "Continue as Guest"
+            WebElement guestButton = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions
+                            .elementToBeClickable(By.xpath("//*[contains(text(), 'Continue as Guest')]")));
+            guestButton.click();
+
+            // Give the React DOM a moment to unmount the modal and render the dashboard
+            Thread.sleep(2000);
         } catch (Exception e) {
-            System.out.println("No entry button found, assuming already on dashboard or different button text...");
+            System.out.println("Navigation error or already on dashboard: " + e.getMessage());
         }
         // ---------------------------------------------------------------------------------
 
         // Step 3: Locate file input and upload CSV dataset
         WebElement fileInput = wait.until(ExpectedConditions.presenceOfElementLocated(
-                By.cssSelector("input[type='file']")
-        ));
+                By.cssSelector("input[type='file']")));
         assertNotNull(fileInput, "Hidden file input should be present in DOM");
         fileInput.sendKeys(sampleDataset.toString());
 
         // Step 4: Verify agent terminal logs appear
         WebElement terminalHeader = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//*[contains(text(), 'Antigravity Agent Runtime Terminal')]")
-        ));
+                By.xpath("//*[contains(text(), 'Antigravity Agent Runtime Terminal')]")));
         assertNotNull(terminalHeader, "Terminal log stream should be rendered upon file submission");
 
-        // Step 5: Wait for the Human-in-the-Loop modal to appear (agent requests mutation approval)
+        // Step 5: Wait for the Human-in-the-Loop modal to appear (agent requests
+        // mutation approval)
         WebElement approveButton = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//button[contains(., 'Approve Fix')]")
-        ));
+                By.xpath("//button[contains(., 'Approve Fix')]")));
         assertNotNull(approveButton, "HITL Approval Modal should display 'Approve Fix' button");
 
         // Step 6: Operator approves the algorithmic remediation fix
@@ -106,14 +111,12 @@ public class AuditorE2ETest {
 
         // Step 7: Wait for the audit to complete and assert that Recharts SVG renders
         WebElement rechartsSurface = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector(".recharts-responsive-container, svg.recharts-surface")
-        ));
+                By.cssSelector(".recharts-responsive-container, svg.recharts-surface")));
         assertTrue(rechartsSurface.isDisplayed(), "Recharts visualization should be visible after audit completion");
 
         // Step 8: Assert that Disparate Impact Metric card is rendered
         WebElement disparateImpactCard = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//*[contains(text(), 'Disparate Impact Ratio')]")
-        ));
+                By.xpath("//*[contains(text(), 'Disparate Impact Ratio')]")));
         assertTrue(disparateImpactCard.isDisplayed(), "Disparate Impact KPI card must be visible");
     }
 }
