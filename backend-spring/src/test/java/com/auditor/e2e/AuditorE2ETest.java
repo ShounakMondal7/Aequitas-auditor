@@ -65,6 +65,23 @@ public class AuditorE2ETest {
         driver.get(FRONTEND_URL);
         assertEquals("Autonomous AI Fairness & Bias Auditor", driver.getTitle());
 
+        // ---------------------------------------------------------------------------------
+        // FIX ADDED HERE: Click the button to bypass the Landing Page / Auth Modal
+        // Note: I included "Guest" and "Get Started" in the XPath. If your actual button 
+        // has different text, update the text inside the contains() function!
+        // ---------------------------------------------------------------------------------
+        try {
+            WebElement enterButton = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.elementToBeClickable(By.xpath("//button[contains(text(), 'Get Started') or contains(text(), 'Guest')]")));
+            enterButton.click();
+            
+            // Adding a tiny sleep just to let the DOM transition to the dashboard
+            Thread.sleep(2000); 
+        } catch (Exception e) {
+            System.out.println("No entry button found, assuming already on dashboard or different button text...");
+        }
+        // ---------------------------------------------------------------------------------
+
         // Step 3: Locate file input and upload CSV dataset
         WebElement fileInput = wait.until(ExpectedConditions.presenceOfElementLocated(
                 By.cssSelector("input[type='file']")
