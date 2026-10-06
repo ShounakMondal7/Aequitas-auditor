@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +19,8 @@ import java.nio.file.StandardCopyOption;
 
 @RestController
 @RequestMapping("/api/audit")
-@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"}, allowCredentials = "true")
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:3000" }, allowCredentials = "true")
 public class AuditController {
 
     private static final Logger log = LoggerFactory.getLogger(AuditController.class);
@@ -42,8 +42,10 @@ public class AuditController {
 
     /**
      * POST /api/audit
-     * Accepts a CSV dataset upload and establishes a real-time Server-Sent Events (SSE)
-     * stream connecting the React frontend directly to the Antigravity Agent process.
+     * Accepts a CSV dataset upload and establishes a real-time Server-Sent Events
+     * (SSE)
+     * stream connecting the React frontend directly to the Antigravity Agent
+     * process.
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SseEmitter> triggerAudit(
